@@ -20,801 +20,964 @@ import com.amazonaws.services.s3.model.inventory.InventoryConfiguration;
 import com.amazonaws.services.s3.model.metrics.MetricsConfiguration;
 import com.amazonaws.services.s3.waiters.AmazonS3Waiters;
 
-@SuppressWarnings("deprecation")
-public class AbstractAmazonS3 {
+public class AbstractAmazonS3 implements AmazonS3 {
 
-  private final AmazonS3 _client;
-
-  public AbstractAmazonS3(AmazonS3 client) {
-    _client = client;
-  }
-
-  public PutObjectResult putObject(PutObjectRequest req) {
-    return _client.putObject(req);
-  }
-
-  public S3Object getObject(GetObjectRequest req) {
-    return _client.getObject(req);
-  }
-
-  public ObjectMetadata getObject(GetObjectRequest req, File dest) {
-    return _client.getObject(req, dest);
-  }
-
-  public CompleteMultipartUploadResult completeMultipartUpload(CompleteMultipartUploadRequest req) {
-    return _client.completeMultipartUpload(req);
-  }
-
-  public InitiateMultipartUploadResult initiateMultipartUpload(InitiateMultipartUploadRequest req) {
-    return _client.initiateMultipartUpload(req);
-  }
-
-  public UploadPartResult uploadPart(UploadPartRequest req) {
-    return _client.uploadPart(req);
-  }
-
-  public CopyPartResult copyPart(CopyPartRequest req) {
-    return _client.copyPart(req);
-  }
-
+  @Override
   public void setEndpoint(String endpoint) {
-    _client.setEndpoint(endpoint);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setRegion(Region region) throws IllegalArgumentException {
-    _client.setRegion(region);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setS3ClientOptions(S3ClientOptions clientOptions) {
-    _client.setS3ClientOptions(clientOptions);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void changeObjectStorageClass(String bucketName, String key, StorageClass newStorageClass)
       throws SdkClientException, AmazonServiceException {
-    _client.changeObjectStorageClass(bucketName, key, newStorageClass);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setObjectRedirectLocation(String bucketName, String key, String newRedirectLocation)
       throws SdkClientException, AmazonServiceException {
-    _client.setObjectRedirectLocation(bucketName, key, newRedirectLocation);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public ObjectListing listObjects(String bucketName) throws SdkClientException, AmazonServiceException {
-    return _client.listObjects(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public ObjectListing listObjects(String bucketName, String prefix) throws SdkClientException, AmazonServiceException {
-    return _client.listObjects(bucketName, prefix);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public ObjectListing listObjects(ListObjectsRequest listObjectsRequest)
       throws SdkClientException, AmazonServiceException {
-    return _client.listObjects(listObjectsRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public ListObjectsV2Result listObjectsV2(String bucketName) throws SdkClientException, AmazonServiceException {
-    return _client.listObjectsV2(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public ListObjectsV2Result listObjectsV2(String bucketName, String prefix)
       throws SdkClientException, AmazonServiceException {
-    return _client.listObjectsV2(bucketName, prefix);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public ListObjectsV2Result listObjectsV2(ListObjectsV2Request listObjectsV2Request)
       throws SdkClientException, AmazonServiceException {
-    return _client.listObjectsV2(listObjectsV2Request);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public ObjectListing listNextBatchOfObjects(ObjectListing previousObjectListing)
       throws SdkClientException, AmazonServiceException {
-    return _client.listNextBatchOfObjects(previousObjectListing);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public ObjectListing listNextBatchOfObjects(ListNextBatchOfObjectsRequest listNextBatchOfObjectsRequest)
       throws SdkClientException, AmazonServiceException {
-    return _client.listNextBatchOfObjects(listNextBatchOfObjectsRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public VersionListing listVersions(String bucketName, String prefix)
       throws SdkClientException, AmazonServiceException {
-    return _client.listVersions(bucketName, prefix);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public VersionListing listNextBatchOfVersions(VersionListing previousVersionListing)
       throws SdkClientException, AmazonServiceException {
-    return _client.listNextBatchOfVersions(previousVersionListing);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public VersionListing listNextBatchOfVersions(ListNextBatchOfVersionsRequest listNextBatchOfVersionsRequest)
       throws SdkClientException, AmazonServiceException {
-    return _client.listNextBatchOfVersions(listNextBatchOfVersionsRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public VersionListing listVersions(String bucketName, String prefix, String keyMarker, String versionIdMarker,
       String delimiter, Integer maxResults) throws SdkClientException, AmazonServiceException {
-    return _client.listVersions(bucketName, prefix, keyMarker, versionIdMarker, delimiter, maxResults);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public VersionListing listVersions(ListVersionsRequest listVersionsRequest)
       throws SdkClientException, AmazonServiceException {
-    return _client.listVersions(listVersionsRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public Owner getS3AccountOwner() throws SdkClientException, AmazonServiceException {
-    return _client.getS3AccountOwner();
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public Owner getS3AccountOwner(GetS3AccountOwnerRequest getS3AccountOwnerRequest)
       throws SdkClientException, AmazonServiceException {
-    return _client.getS3AccountOwner(getS3AccountOwnerRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public boolean doesBucketExist(String bucketName) throws SdkClientException, AmazonServiceException {
-    return _client.doesBucketExist(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public boolean doesBucketExistV2(String bucketName) throws SdkClientException, AmazonServiceException {
-    return _client.doesBucketExistV2(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public HeadBucketResult headBucket(HeadBucketRequest headBucketRequest)
       throws SdkClientException, AmazonServiceException {
-    return _client.headBucket(headBucketRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public List<Bucket> listBuckets() throws SdkClientException, AmazonServiceException {
-    return _client.listBuckets();
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public List<Bucket> listBuckets(ListBucketsRequest listBucketsRequest)
       throws SdkClientException, AmazonServiceException {
-    return _client.listBuckets(listBucketsRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public String getBucketLocation(String bucketName) throws SdkClientException, AmazonServiceException {
-    return _client.getBucketLocation(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public String getBucketLocation(GetBucketLocationRequest getBucketLocationRequest)
       throws SdkClientException, AmazonServiceException {
-    return _client.getBucketLocation(getBucketLocationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public Bucket createBucket(CreateBucketRequest createBucketRequest)
       throws SdkClientException, AmazonServiceException {
-    return _client.createBucket(createBucketRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public Bucket createBucket(String bucketName) throws SdkClientException, AmazonServiceException {
-    return _client.createBucket(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public Bucket createBucket(String bucketName, com.amazonaws.services.s3.model.Region region)
       throws SdkClientException, AmazonServiceException {
-    return _client.createBucket(bucketName, region);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public Bucket createBucket(String bucketName, String region) throws SdkClientException, AmazonServiceException {
-    return _client.createBucket(bucketName, region);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public AccessControlList getObjectAcl(String bucketName, String key)
       throws SdkClientException, AmazonServiceException {
-    return _client.getObjectAcl(bucketName, key);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public AccessControlList getObjectAcl(String bucketName, String key, String versionId)
       throws SdkClientException, AmazonServiceException {
-    return _client.getObjectAcl(bucketName, key, versionId);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public AccessControlList getObjectAcl(GetObjectAclRequest getObjectAclRequest)
       throws SdkClientException, AmazonServiceException {
-    return _client.getObjectAcl(getObjectAclRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setObjectAcl(String bucketName, String key, AccessControlList acl)
       throws SdkClientException, AmazonServiceException {
-    _client.setObjectAcl(bucketName, key, acl);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setObjectAcl(String bucketName, String key, CannedAccessControlList acl)
       throws SdkClientException, AmazonServiceException {
-    _client.setObjectAcl(bucketName, key, acl);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setObjectAcl(String bucketName, String key, String versionId, AccessControlList acl)
       throws SdkClientException, AmazonServiceException {
-    _client.setObjectAcl(bucketName, key, versionId, acl);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setObjectAcl(String bucketName, String key, String versionId, CannedAccessControlList acl)
       throws SdkClientException, AmazonServiceException {
-    _client.setObjectAcl(bucketName, key, versionId, acl);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setObjectAcl(SetObjectAclRequest setObjectAclRequest) throws SdkClientException, AmazonServiceException {
-    _client.setObjectAcl(setObjectAclRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public AccessControlList getBucketAcl(String bucketName) throws SdkClientException, AmazonServiceException {
-    return _client.getBucketAcl(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setBucketAcl(SetBucketAclRequest setBucketAclRequest) throws SdkClientException, AmazonServiceException {
-    _client.setBucketAcl(setBucketAclRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public AccessControlList getBucketAcl(GetBucketAclRequest getBucketAclRequest)
       throws SdkClientException, AmazonServiceException {
-    return _client.getBucketAcl(getBucketAclRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setBucketAcl(String bucketName, AccessControlList acl) throws SdkClientException, AmazonServiceException {
-    _client.setBucketAcl(bucketName, acl);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setBucketAcl(String bucketName, CannedAccessControlList acl)
       throws SdkClientException, AmazonServiceException {
-    _client.setBucketAcl(bucketName, acl);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public ObjectMetadata getObjectMetadata(String bucketName, String key)
       throws SdkClientException, AmazonServiceException {
-    return _client.getObjectMetadata(bucketName, key);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public ObjectMetadata getObjectMetadata(GetObjectMetadataRequest getObjectMetadataRequest)
       throws SdkClientException, AmazonServiceException {
-    return _client.getObjectMetadata(getObjectMetadataRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public S3Object getObject(String bucketName, String key) throws SdkClientException, AmazonServiceException {
-    return _client.getObject(bucketName, key);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
+  public S3Object getObject(GetObjectRequest getObjectRequest) throws SdkClientException, AmazonServiceException {
+    throw new RuntimeException("Not Implemented");
+  }
+
+  @Override
+  public ObjectMetadata getObject(GetObjectRequest getObjectRequest, File destinationFile)
+      throws SdkClientException, AmazonServiceException {
+    throw new RuntimeException("Not Implemented");
+  }
+
+  @Override
   public String getObjectAsString(String bucketName, String key) throws AmazonServiceException, SdkClientException {
-    return _client.getObjectAsString(bucketName, key);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public GetObjectTaggingResult getObjectTagging(GetObjectTaggingRequest getObjectTaggingRequest) {
-    return _client.getObjectTagging(getObjectTaggingRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public SetObjectTaggingResult setObjectTagging(SetObjectTaggingRequest setObjectTaggingRequest) {
-    return _client.setObjectTagging(setObjectTaggingRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public DeleteObjectTaggingResult deleteObjectTagging(DeleteObjectTaggingRequest deleteObjectTaggingRequest) {
-    return _client.deleteObjectTagging(deleteObjectTaggingRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void deleteBucket(DeleteBucketRequest deleteBucketRequest) throws SdkClientException, AmazonServiceException {
-    _client.deleteBucket(deleteBucketRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void deleteBucket(String bucketName) throws SdkClientException, AmazonServiceException {
-    _client.deleteBucket(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
+  public PutObjectResult putObject(PutObjectRequest putObjectRequest)
+      throws SdkClientException, AmazonServiceException {
+    throw new RuntimeException("Not Implemented");
+  }
+
+  @Override
   public PutObjectResult putObject(String bucketName, String key, File file)
       throws SdkClientException, AmazonServiceException {
-    return _client.putObject(bucketName, key, file);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public PutObjectResult putObject(String bucketName, String key, InputStream input, ObjectMetadata metadata)
       throws SdkClientException, AmazonServiceException {
-    return _client.putObject(bucketName, key, input, metadata);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public PutObjectResult putObject(String bucketName, String key, String content)
       throws AmazonServiceException, SdkClientException {
-    return _client.putObject(bucketName, key, content);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public CopyObjectResult copyObject(String sourceBucketName, String sourceKey, String destinationBucketName,
       String destinationKey) throws SdkClientException, AmazonServiceException {
-    return _client.copyObject(sourceBucketName, sourceKey, destinationBucketName, destinationKey);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public CopyObjectResult copyObject(CopyObjectRequest copyObjectRequest)
       throws SdkClientException, AmazonServiceException {
-    return _client.copyObject(copyObjectRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
+  public CopyPartResult copyPart(CopyPartRequest copyPartRequest) throws SdkClientException, AmazonServiceException {
+    throw new RuntimeException("Not Implemented");
+  }
+
+  @Override
   public void deleteObject(String bucketName, String key) throws SdkClientException, AmazonServiceException {
-    _client.deleteObject(bucketName, key);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void deleteObject(DeleteObjectRequest deleteObjectRequest) throws SdkClientException, AmazonServiceException {
-    _client.deleteObject(deleteObjectRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public DeleteObjectsResult deleteObjects(DeleteObjectsRequest deleteObjectsRequest)
       throws SdkClientException, AmazonServiceException {
-    return _client.deleteObjects(deleteObjectsRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void deleteVersion(String bucketName, String key, String versionId)
       throws SdkClientException, AmazonServiceException {
-    _client.deleteVersion(bucketName, key, versionId);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void deleteVersion(DeleteVersionRequest deleteVersionRequest)
       throws SdkClientException, AmazonServiceException {
-    _client.deleteVersion(deleteVersionRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public BucketLoggingConfiguration getBucketLoggingConfiguration(String bucketName)
       throws SdkClientException, AmazonServiceException {
-    return _client.getBucketLoggingConfiguration(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public BucketLoggingConfiguration getBucketLoggingConfiguration(
       GetBucketLoggingConfigurationRequest getBucketLoggingConfigurationRequest)
       throws SdkClientException, AmazonServiceException {
-    return _client.getBucketLoggingConfiguration(getBucketLoggingConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setBucketLoggingConfiguration(SetBucketLoggingConfigurationRequest setBucketLoggingConfigurationRequest)
       throws SdkClientException, AmazonServiceException {
-    _client.setBucketLoggingConfiguration(setBucketLoggingConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public BucketVersioningConfiguration getBucketVersioningConfiguration(String bucketName)
       throws SdkClientException, AmazonServiceException {
-    return _client.getBucketVersioningConfiguration(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public BucketVersioningConfiguration getBucketVersioningConfiguration(
       GetBucketVersioningConfigurationRequest getBucketVersioningConfigurationRequest)
       throws SdkClientException, AmazonServiceException {
-    return _client.getBucketVersioningConfiguration(getBucketVersioningConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setBucketVersioningConfiguration(
       SetBucketVersioningConfigurationRequest setBucketVersioningConfigurationRequest)
       throws SdkClientException, AmazonServiceException {
-    _client.setBucketVersioningConfiguration(setBucketVersioningConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public BucketLifecycleConfiguration getBucketLifecycleConfiguration(String bucketName) {
-    return _client.getBucketLifecycleConfiguration(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public BucketLifecycleConfiguration getBucketLifecycleConfiguration(
       GetBucketLifecycleConfigurationRequest getBucketLifecycleConfigurationRequest) {
-    return _client.getBucketLifecycleConfiguration(getBucketLifecycleConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setBucketLifecycleConfiguration(String bucketName,
       BucketLifecycleConfiguration bucketLifecycleConfiguration) {
-    _client.setBucketLifecycleConfiguration(bucketName, bucketLifecycleConfiguration);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setBucketLifecycleConfiguration(
       SetBucketLifecycleConfigurationRequest setBucketLifecycleConfigurationRequest) {
-    _client.setBucketLifecycleConfiguration(setBucketLifecycleConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void deleteBucketLifecycleConfiguration(String bucketName) {
-    _client.deleteBucketLifecycleConfiguration(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void deleteBucketLifecycleConfiguration(
       DeleteBucketLifecycleConfigurationRequest deleteBucketLifecycleConfigurationRequest) {
-    _client.deleteBucketLifecycleConfiguration(deleteBucketLifecycleConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public BucketCrossOriginConfiguration getBucketCrossOriginConfiguration(String bucketName) {
-    return _client.getBucketCrossOriginConfiguration(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public BucketCrossOriginConfiguration getBucketCrossOriginConfiguration(
       GetBucketCrossOriginConfigurationRequest getBucketCrossOriginConfigurationRequest) {
-    return _client.getBucketCrossOriginConfiguration(getBucketCrossOriginConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setBucketCrossOriginConfiguration(String bucketName,
       BucketCrossOriginConfiguration bucketCrossOriginConfiguration) {
-    _client.setBucketCrossOriginConfiguration(bucketName, bucketCrossOriginConfiguration);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setBucketCrossOriginConfiguration(
       SetBucketCrossOriginConfigurationRequest setBucketCrossOriginConfigurationRequest) {
-    _client.setBucketCrossOriginConfiguration(setBucketCrossOriginConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void deleteBucketCrossOriginConfiguration(String bucketName) {
-    _client.deleteBucketCrossOriginConfiguration(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void deleteBucketCrossOriginConfiguration(
       DeleteBucketCrossOriginConfigurationRequest deleteBucketCrossOriginConfigurationRequest) {
-    _client.deleteBucketCrossOriginConfiguration(deleteBucketCrossOriginConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public BucketTaggingConfiguration getBucketTaggingConfiguration(String bucketName) {
-    return _client.getBucketTaggingConfiguration(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public BucketTaggingConfiguration getBucketTaggingConfiguration(
       GetBucketTaggingConfigurationRequest getBucketTaggingConfigurationRequest) {
-    return _client.getBucketTaggingConfiguration(getBucketTaggingConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setBucketTaggingConfiguration(String bucketName, BucketTaggingConfiguration bucketTaggingConfiguration) {
-    _client.setBucketTaggingConfiguration(bucketName, bucketTaggingConfiguration);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setBucketTaggingConfiguration(SetBucketTaggingConfigurationRequest setBucketTaggingConfigurationRequest) {
-    _client.setBucketTaggingConfiguration(setBucketTaggingConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void deleteBucketTaggingConfiguration(String bucketName) {
-    _client.deleteBucketTaggingConfiguration(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void deleteBucketTaggingConfiguration(
       DeleteBucketTaggingConfigurationRequest deleteBucketTaggingConfigurationRequest) {
-    _client.deleteBucketTaggingConfiguration(deleteBucketTaggingConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public BucketNotificationConfiguration getBucketNotificationConfiguration(String bucketName)
       throws SdkClientException, AmazonServiceException {
-    return _client.getBucketNotificationConfiguration(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public BucketNotificationConfiguration getBucketNotificationConfiguration(
       GetBucketNotificationConfigurationRequest getBucketNotificationConfigurationRequest)
       throws SdkClientException, AmazonServiceException {
-    return _client.getBucketNotificationConfiguration(getBucketNotificationConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setBucketNotificationConfiguration(
       SetBucketNotificationConfigurationRequest setBucketNotificationConfigurationRequest)
       throws SdkClientException, AmazonServiceException {
-    _client.setBucketNotificationConfiguration(setBucketNotificationConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setBucketNotificationConfiguration(String bucketName,
       BucketNotificationConfiguration bucketNotificationConfiguration)
       throws SdkClientException, AmazonServiceException {
-    _client.setBucketNotificationConfiguration(bucketName, bucketNotificationConfiguration);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public BucketWebsiteConfiguration getBucketWebsiteConfiguration(String bucketName)
       throws SdkClientException, AmazonServiceException {
-    return _client.getBucketWebsiteConfiguration(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public BucketWebsiteConfiguration getBucketWebsiteConfiguration(
       GetBucketWebsiteConfigurationRequest getBucketWebsiteConfigurationRequest)
       throws SdkClientException, AmazonServiceException {
-    return _client.getBucketWebsiteConfiguration(getBucketWebsiteConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setBucketWebsiteConfiguration(String bucketName, BucketWebsiteConfiguration configuration)
       throws SdkClientException, AmazonServiceException {
-    _client.setBucketWebsiteConfiguration(bucketName, configuration);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setBucketWebsiteConfiguration(SetBucketWebsiteConfigurationRequest setBucketWebsiteConfigurationRequest)
       throws SdkClientException, AmazonServiceException {
-    _client.setBucketWebsiteConfiguration(setBucketWebsiteConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void deleteBucketWebsiteConfiguration(String bucketName) throws SdkClientException, AmazonServiceException {
-    _client.deleteBucketWebsiteConfiguration(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void deleteBucketWebsiteConfiguration(
       DeleteBucketWebsiteConfigurationRequest deleteBucketWebsiteConfigurationRequest)
       throws SdkClientException, AmazonServiceException {
-    _client.deleteBucketWebsiteConfiguration(deleteBucketWebsiteConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public BucketPolicy getBucketPolicy(String bucketName) throws SdkClientException, AmazonServiceException {
-    return _client.getBucketPolicy(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public BucketPolicy getBucketPolicy(GetBucketPolicyRequest getBucketPolicyRequest)
       throws SdkClientException, AmazonServiceException {
-    return _client.getBucketPolicy(getBucketPolicyRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setBucketPolicy(String bucketName, String policyText) throws SdkClientException, AmazonServiceException {
-    _client.setBucketPolicy(bucketName, policyText);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setBucketPolicy(SetBucketPolicyRequest setBucketPolicyRequest)
       throws SdkClientException, AmazonServiceException {
-    _client.setBucketPolicy(setBucketPolicyRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void deleteBucketPolicy(String bucketName) throws SdkClientException, AmazonServiceException {
-    _client.deleteBucketPolicy(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void deleteBucketPolicy(DeleteBucketPolicyRequest deleteBucketPolicyRequest)
       throws SdkClientException, AmazonServiceException {
-    _client.deleteBucketPolicy(deleteBucketPolicyRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public URL generatePresignedUrl(String bucketName, String key, Date expiration) throws SdkClientException {
-    return _client.generatePresignedUrl(bucketName, key, expiration);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public URL generatePresignedUrl(String bucketName, String key, Date expiration, HttpMethod method)
       throws SdkClientException {
-    return _client.generatePresignedUrl(bucketName, key, expiration, method);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public URL generatePresignedUrl(GeneratePresignedUrlRequest generatePresignedUrlRequest) throws SdkClientException {
-    return _client.generatePresignedUrl(generatePresignedUrlRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
+  public InitiateMultipartUploadResult initiateMultipartUpload(InitiateMultipartUploadRequest request)
+      throws SdkClientException, AmazonServiceException {
+    throw new RuntimeException("Not Implemented");
+  }
+
+  @Override
+  public UploadPartResult uploadPart(UploadPartRequest request) throws SdkClientException, AmazonServiceException {
+    throw new RuntimeException("Not Implemented");
+  }
+
+  @Override
   public PartListing listParts(ListPartsRequest request) throws SdkClientException, AmazonServiceException {
-    return _client.listParts(request);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void abortMultipartUpload(AbortMultipartUploadRequest request)
       throws SdkClientException, AmazonServiceException {
-    _client.abortMultipartUpload(request);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
+  public CompleteMultipartUploadResult completeMultipartUpload(CompleteMultipartUploadRequest request)
+      throws SdkClientException, AmazonServiceException {
+    throw new RuntimeException("Not Implemented");
+  }
+
+  @Override
   public MultipartUploadListing listMultipartUploads(ListMultipartUploadsRequest request)
       throws SdkClientException, AmazonServiceException {
-    return _client.listMultipartUploads(request);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public S3ResponseMetadata getCachedResponseMetadata(AmazonWebServiceRequest request) {
-    return _client.getCachedResponseMetadata(request);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void restoreObject(RestoreObjectRequest request) throws AmazonServiceException {
-    _client.restoreObject(request);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public RestoreObjectResult restoreObjectV2(RestoreObjectRequest request) throws AmazonServiceException {
-    return _client.restoreObjectV2(request);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void restoreObject(String bucketName, String key, int expirationInDays) throws AmazonServiceException {
-    _client.restoreObject(bucketName, key, expirationInDays);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void enableRequesterPays(String bucketName) throws AmazonServiceException, SdkClientException {
-    _client.enableRequesterPays(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void disableRequesterPays(String bucketName) throws AmazonServiceException, SdkClientException {
-    _client.disableRequesterPays(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public boolean isRequesterPaysEnabled(String bucketName) throws AmazonServiceException, SdkClientException {
-    return _client.isRequesterPaysEnabled(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setBucketReplicationConfiguration(String bucketName, BucketReplicationConfiguration configuration)
       throws AmazonServiceException, SdkClientException {
-    _client.setBucketReplicationConfiguration(bucketName, configuration);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setBucketReplicationConfiguration(
       SetBucketReplicationConfigurationRequest setBucketReplicationConfigurationRequest)
       throws AmazonServiceException, SdkClientException {
-    _client.setBucketReplicationConfiguration(setBucketReplicationConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public BucketReplicationConfiguration getBucketReplicationConfiguration(String bucketName)
       throws AmazonServiceException, SdkClientException {
-    return _client.getBucketReplicationConfiguration(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public BucketReplicationConfiguration getBucketReplicationConfiguration(
       GetBucketReplicationConfigurationRequest getBucketReplicationConfigurationRequest)
       throws AmazonServiceException, SdkClientException {
-    return _client.getBucketReplicationConfiguration(getBucketReplicationConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void deleteBucketReplicationConfiguration(String bucketName)
       throws AmazonServiceException, SdkClientException {
-    _client.deleteBucketReplicationConfiguration(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void deleteBucketReplicationConfiguration(DeleteBucketReplicationConfigurationRequest request)
       throws AmazonServiceException, SdkClientException {
-    _client.deleteBucketReplicationConfiguration(request);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public boolean doesObjectExist(String bucketName, String objectName)
       throws AmazonServiceException, SdkClientException {
-    return _client.doesObjectExist(bucketName, objectName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public BucketAccelerateConfiguration getBucketAccelerateConfiguration(String bucketName)
       throws AmazonServiceException, SdkClientException {
-    return _client.getBucketAccelerateConfiguration(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public BucketAccelerateConfiguration getBucketAccelerateConfiguration(
       GetBucketAccelerateConfigurationRequest getBucketAccelerateConfigurationRequest)
       throws AmazonServiceException, SdkClientException {
-    return _client.getBucketAccelerateConfiguration(getBucketAccelerateConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setBucketAccelerateConfiguration(String bucketName, BucketAccelerateConfiguration accelerateConfiguration)
       throws AmazonServiceException, SdkClientException {
-    _client.setBucketAccelerateConfiguration(bucketName, accelerateConfiguration);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void setBucketAccelerateConfiguration(
       SetBucketAccelerateConfigurationRequest setBucketAccelerateConfigurationRequest)
       throws AmazonServiceException, SdkClientException {
-    _client.setBucketAccelerateConfiguration(setBucketAccelerateConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public DeleteBucketMetricsConfigurationResult deleteBucketMetricsConfiguration(String bucketName, String id)
       throws AmazonServiceException, SdkClientException {
-    return _client.deleteBucketMetricsConfiguration(bucketName, id);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public DeleteBucketMetricsConfigurationResult deleteBucketMetricsConfiguration(
       DeleteBucketMetricsConfigurationRequest deleteBucketMetricsConfigurationRequest)
       throws AmazonServiceException, SdkClientException {
-    return _client.deleteBucketMetricsConfiguration(deleteBucketMetricsConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public GetBucketMetricsConfigurationResult getBucketMetricsConfiguration(String bucketName, String id)
       throws AmazonServiceException, SdkClientException {
-    return _client.getBucketMetricsConfiguration(bucketName, id);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public GetBucketMetricsConfigurationResult getBucketMetricsConfiguration(
       GetBucketMetricsConfigurationRequest getBucketMetricsConfigurationRequest)
       throws AmazonServiceException, SdkClientException {
-    return _client.getBucketMetricsConfiguration(getBucketMetricsConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public SetBucketMetricsConfigurationResult setBucketMetricsConfiguration(String bucketName,
       MetricsConfiguration metricsConfiguration) throws AmazonServiceException, SdkClientException {
-    return _client.setBucketMetricsConfiguration(bucketName, metricsConfiguration);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public SetBucketMetricsConfigurationResult setBucketMetricsConfiguration(
       SetBucketMetricsConfigurationRequest setBucketMetricsConfigurationRequest)
       throws AmazonServiceException, SdkClientException {
-    return _client.setBucketMetricsConfiguration(setBucketMetricsConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public ListBucketMetricsConfigurationsResult listBucketMetricsConfigurations(
       ListBucketMetricsConfigurationsRequest listBucketMetricsConfigurationsRequest)
       throws AmazonServiceException, SdkClientException {
-    return _client.listBucketMetricsConfigurations(listBucketMetricsConfigurationsRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public DeleteBucketAnalyticsConfigurationResult deleteBucketAnalyticsConfiguration(String bucketName, String id)
       throws AmazonServiceException, SdkClientException {
-    return _client.deleteBucketAnalyticsConfiguration(bucketName, id);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public DeleteBucketAnalyticsConfigurationResult deleteBucketAnalyticsConfiguration(
       DeleteBucketAnalyticsConfigurationRequest deleteBucketAnalyticsConfigurationRequest)
       throws AmazonServiceException, SdkClientException {
-    return _client.deleteBucketAnalyticsConfiguration(deleteBucketAnalyticsConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public GetBucketAnalyticsConfigurationResult getBucketAnalyticsConfiguration(String bucketName, String id)
       throws AmazonServiceException, SdkClientException {
-    return _client.getBucketAnalyticsConfiguration(bucketName, id);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public GetBucketAnalyticsConfigurationResult getBucketAnalyticsConfiguration(
       GetBucketAnalyticsConfigurationRequest getBucketAnalyticsConfigurationRequest)
       throws AmazonServiceException, SdkClientException {
-    return _client.getBucketAnalyticsConfiguration(getBucketAnalyticsConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public SetBucketAnalyticsConfigurationResult setBucketAnalyticsConfiguration(String bucketName,
       AnalyticsConfiguration analyticsConfiguration) throws AmazonServiceException, SdkClientException {
-    return _client.setBucketAnalyticsConfiguration(bucketName, analyticsConfiguration);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public SetBucketAnalyticsConfigurationResult setBucketAnalyticsConfiguration(
       SetBucketAnalyticsConfigurationRequest setBucketAnalyticsConfigurationRequest)
       throws AmazonServiceException, SdkClientException {
-    return _client.setBucketAnalyticsConfiguration(setBucketAnalyticsConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public ListBucketAnalyticsConfigurationsResult listBucketAnalyticsConfigurations(
       ListBucketAnalyticsConfigurationsRequest listBucketAnalyticsConfigurationsRequest)
       throws AmazonServiceException, SdkClientException {
-    return _client.listBucketAnalyticsConfigurations(listBucketAnalyticsConfigurationsRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public DeleteBucketInventoryConfigurationResult deleteBucketInventoryConfiguration(String bucketName, String id)
       throws AmazonServiceException, SdkClientException {
-    return _client.deleteBucketInventoryConfiguration(bucketName, id);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public DeleteBucketInventoryConfigurationResult deleteBucketInventoryConfiguration(
       DeleteBucketInventoryConfigurationRequest deleteBucketInventoryConfigurationRequest)
       throws AmazonServiceException, SdkClientException {
-    return _client.deleteBucketInventoryConfiguration(deleteBucketInventoryConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public GetBucketInventoryConfigurationResult getBucketInventoryConfiguration(String bucketName, String id)
       throws AmazonServiceException, SdkClientException {
-    return _client.getBucketInventoryConfiguration(bucketName, id);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public GetBucketInventoryConfigurationResult getBucketInventoryConfiguration(
       GetBucketInventoryConfigurationRequest getBucketInventoryConfigurationRequest)
       throws AmazonServiceException, SdkClientException {
-    return _client.getBucketInventoryConfiguration(getBucketInventoryConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public SetBucketInventoryConfigurationResult setBucketInventoryConfiguration(String bucketName,
       InventoryConfiguration inventoryConfiguration) throws AmazonServiceException, SdkClientException {
-    return _client.setBucketInventoryConfiguration(bucketName, inventoryConfiguration);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public SetBucketInventoryConfigurationResult setBucketInventoryConfiguration(
       SetBucketInventoryConfigurationRequest setBucketInventoryConfigurationRequest)
       throws AmazonServiceException, SdkClientException {
-    return _client.setBucketInventoryConfiguration(setBucketInventoryConfigurationRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public ListBucketInventoryConfigurationsResult listBucketInventoryConfigurations(
       ListBucketInventoryConfigurationsRequest listBucketInventoryConfigurationsRequest)
       throws AmazonServiceException, SdkClientException {
-    return _client.listBucketInventoryConfigurations(listBucketInventoryConfigurationsRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public DeleteBucketEncryptionResult deleteBucketEncryption(String bucketName)
       throws AmazonServiceException, SdkClientException {
-    return _client.deleteBucketEncryption(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public DeleteBucketEncryptionResult deleteBucketEncryption(DeleteBucketEncryptionRequest request)
       throws AmazonServiceException, SdkClientException {
-    return _client.deleteBucketEncryption(request);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public GetBucketEncryptionResult getBucketEncryption(String bucketName)
       throws AmazonServiceException, SdkClientException {
-    return _client.getBucketEncryption(bucketName);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public GetBucketEncryptionResult getBucketEncryption(GetBucketEncryptionRequest request)
       throws AmazonServiceException, SdkClientException {
-    return _client.getBucketEncryption(request);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public SetBucketEncryptionResult setBucketEncryption(SetBucketEncryptionRequest setBucketEncryptionRequest)
       throws AmazonServiceException, SdkClientException {
-    return _client.setBucketEncryption(setBucketEncryptionRequest);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public void shutdown() {
-    _client.shutdown();
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public com.amazonaws.services.s3.model.Region getRegion() {
-    return _client.getRegion();
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public String getRegionName() {
-    return _client.getRegionName();
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public URL getUrl(String bucketName, String key) {
-    return _client.getUrl(bucketName, key);
+    throw new RuntimeException("Not Implemented");
   }
 
+  @Override
   public AmazonS3Waiters waiters() {
-    return _client.waiters();
+    throw new RuntimeException("Not Implemented");
   }
+
 }

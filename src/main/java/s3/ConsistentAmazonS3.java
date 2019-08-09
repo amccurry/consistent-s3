@@ -4,6 +4,7 @@ import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -12,10 +13,12 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.AmazonServiceException.ErrorType;
+import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
@@ -28,7 +31,6 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
-import com.amazonaws.thirdparty.jackson.databind.ObjectMapper;
 import com.amazonaws.util.IOUtils;
 import com.amazonaws.util.StringUtils;
 
@@ -36,13 +38,13 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ConsistentAmazonS3.class);
 
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final String CONSISTENCY_KEY = "consistencyKey";
   private static final String _404_NOT_FOUND = "404 Not Found";
   private final CuratorFramework _curatorFramework;
   private final String _zkPrefix;
   private final long _retryDelay = TimeUnit.SECONDS.toMillis(1);
   private final int _maxConsistencyCount = 10;
+  private final AmazonS3 _client;
 
   public static ConsistentAmazonS3 create(AmazonS3 client, CuratorFramework curatorFramework) throws Exception {
     return new ConsistentAmazonS3(client, curatorFramework, null);
@@ -54,12 +56,12 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 {
   }
 
   private ConsistentAmazonS3(AmazonS3 client, CuratorFramework curatorFramework, String zkPrefix) throws Exception {
-    super(client);
+    _client = client;
     _curatorFramework = curatorFramework;
     _zkPrefix = zkPrefix;
   }
 
-  public void checkOutstandingConsistencyEntries(boolean waitForEntriesToBecomeConsistent) throws Exception {
+  public void checkOutstandingConsistencyEntries(boolean waitForEntriesToBecomeConsistent) {
     List<String> list = CuratorUtils.getChildrenIfExists(_curatorFramework, getPrefix());
     if (list == null) {
       return;
@@ -68,10 +70,10 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 {
       String path = getPrefix() + "/" + s;
       ConsistencyEntry entry = getConsistencyEntry(path);
       if (entry != null) {
-        ObjectMetadata objectMetadata = getObjectMetadata(entry.getBucket(), entry.getKey());
+        ObjectMetadata objectMetadata = _client.getObjectMetadata(entry.getBucket(), entry.getKey());
         if (waitForEntriesToBecomeConsistent) {
           while (!isValid(entry, objectMetadata, true)) {
-            Thread.sleep(_retryDelay);
+            sleep(_retryDelay);
           }
         } else {
           isValid(entry, objectMetadata);
@@ -80,7 +82,7 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 {
     }
   }
 
-  public List<ConsistencyEntry> getOutstandingConsistencyEntries() throws Exception {
+  public List<ConsistencyEntry> getOutstandingConsistencyEntries() {
     List<ConsistencyEntry> result = new ArrayList<>();
     List<String> list = CuratorUtils.getChildrenIfExists(_curatorFramework, getPrefix());
     if (list == null) {
@@ -93,16 +95,20 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 {
     return result;
   }
 
-  public S3Object getConsistentObject(GetObjectRequest getObjectRequest) throws Exception {
+  @Override
+  public S3Object getObject(GetObjectRequest getObjectRequest) throws SdkClientException, AmazonServiceException {
     String consistencyPath = getConsistencyPath(getObjectRequest.getBucketName(), getObjectRequest.getKey());
     while (true) {
       ConsistencyEntry entry = getConsistencyEntry(consistencyPath);
-      if (entry != null) {
+      if (entry == null) {
         // none found just fetch the object
-        return getObject(getObjectRequest);
+        return _client.getObject(getObjectRequest);
+      }
+      if (entry.isDeleted()) {
+        throw newNoKeyFound();
       }
       try {
-        S3Object object = getObject(getObjectRequest);
+        S3Object object = _client.getObject(getObjectRequest);
         if (isValid(entry, object.getObjectMetadata())) {
           return object;
         }
@@ -113,16 +119,146 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 {
           throw e;
         }
       }
-      Thread.sleep(_retryDelay);
+      sleep(_retryDelay);
     }
   }
 
-  private boolean isValid(ConsistencyEntry entry, ObjectMetadata objectMetadata) throws Exception {
+  private AmazonServiceException newNoKeyFound() {
+    AmazonServiceException exception = new AmazonServiceException("The specified key does not exist.");
+    exception.setErrorCode("NoSuchKey");
+    exception.setErrorType(ErrorType.Client);
+    exception.setStatusCode(404);
+    exception.setServiceName("Amazon S3");
+    return exception;
+  }
+
+  @Override
+  public PutObjectResult putObject(PutObjectRequest putObjectRequest)
+      throws SdkClientException, AmazonServiceException {
+    ObjectMetadata metadata = putObjectRequest.getMetadata();
+    if (metadata == null) {
+      metadata = new ObjectMetadata();
+    }
+    String consistencyKey = UUID.randomUUID()
+                                .toString();
+    metadata.addUserMetadata(CONSISTENCY_KEY, consistencyKey);
+    putObjectRequest.setMetadata(metadata);
+    String path = getConsistencyPath(putObjectRequest.getBucketName(), putObjectRequest.getKey());
+
+    ConsistencyEntry entry = new ConsistencyEntry();
+    entry.setBucket(putObjectRequest.getBucketName());
+    entry.setKey(putObjectRequest.getKey());
+    entry.setConsistencyKey(consistencyKey);
+
+    byte[] data = JsonUtils.toBytes(entry);
+    CuratorUtils.createOrSetDataForPath(_curatorFramework, path, data);
+    return _client.putObject(putObjectRequest);
+  }
+
+  @Override
+  public void deleteObject(DeleteObjectRequest deleteObjectRequest) throws SdkClientException, AmazonServiceException {
+    String bucketName = deleteObjectRequest.getBucketName();
+    String key = deleteObjectRequest.getKey();
+    deleteEntry(bucketName, key);
+    _client.deleteObject(deleteObjectRequest);
+  }
+
+  @Override
+  public DeleteObjectsResult deleteObjects(DeleteObjectsRequest deleteObjectsRequest)
+      throws SdkClientException, AmazonServiceException {
+    String bucketName = deleteObjectsRequest.getBucketName();
+    for (KeyVersion key : deleteObjectsRequest.getKeys()) {
+      deleteEntry(bucketName, key.getKey());
+    }
+    return _client.deleteObjects(deleteObjectsRequest);
+  }
+
+  @Override
+  public void deleteObject(String bucketName, String key) throws SdkClientException, AmazonServiceException {
+    deleteObject(new DeleteObjectRequest(bucketName, key));
+  }
+
+  @Override
+  public PutObjectResult putObject(String bucketName, String key, File file)
+      throws SdkClientException, AmazonServiceException {
+    return putObject(new PutObjectRequest(bucketName, key, file));
+  }
+
+  @Override
+  public PutObjectResult putObject(String bucketName, String key, InputStream input, ObjectMetadata metadata)
+      throws SdkClientException, AmazonServiceException {
+    return putObject(new PutObjectRequest(bucketName, key, input, metadata));
+  }
+
+  @Override
+  public PutObjectResult putObject(String bucketName, String key, String content)
+      throws SdkClientException, AmazonServiceException {
+    byte[] bs = content.getBytes(StringUtils.UTF8);
+    try (InputStream input = new ByteArrayInputStream(bs)) {
+      ObjectMetadata metadata = new ObjectMetadata();
+      metadata.setContentLength(bs.length);
+      return putObject(new PutObjectRequest(bucketName, key, input, metadata));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public String getObjectAsString(String bucketName, String key) throws SdkClientException, AmazonServiceException {
+    S3Object s3Object = getObject(bucketName, key);
+    try (S3ObjectInputStream input = s3Object.getObjectContent()) {
+      return IOUtils.toString(input);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public ObjectMetadata getObject(GetObjectRequest req, File dest) throws SdkClientException, AmazonServiceException {
+    S3Object s3Object = getObject(req);
+    try (S3ObjectInputStream input = s3Object.getObjectContent()) {
+      try (OutputStream output = new BufferedOutputStream(new FileOutputStream(dest))) {
+        IOUtils.copy(input, output);
+      }
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    return s3Object.getObjectMetadata();
+  }
+
+  @Override
+  public S3Object getObject(String bucketName, String key) throws SdkClientException, AmazonServiceException {
+    return getObject(new GetObjectRequest(bucketName, key));
+  }
+
+  private String getConsistencyPath(String bucketName, String key) {
+    int hashCode = bucketName.hashCode();
+    hashCode += key.hashCode();
+    return getPrefix() + "/" + bucketName + "__" + key.replace("/", "__") + "__" + toString(hashCode);
+  }
+
+  private void deleteEntry(String bucketName, String key) {
+    String consistencyPath = getConsistencyPath(bucketName, key);
+    CuratorUtils.deletePathIfExists(_curatorFramework, consistencyPath);
+  }
+
+  private String getPrefix() {
+    if (_zkPrefix == null) {
+      return "/";
+    }
+    return _zkPrefix;
+  }
+
+  private String toString(int hashCode) {
+    long h = (long) hashCode & 0xFFFFFFFF;
+    return Long.toString(h, Character.MAX_RADIX);
+  }
+
+  private boolean isValid(ConsistencyEntry entry, ObjectMetadata objectMetadata) {
     return isValid(entry, objectMetadata, false);
   }
 
-  private boolean isValid(ConsistencyEntry entry, ObjectMetadata objectMetadata, boolean fullyConsistent)
-      throws Exception {
+  private boolean isValid(ConsistencyEntry entry, ObjectMetadata objectMetadata, boolean fullyConsistent) {
     String actualConsistencyKey = objectMetadata.getUserMetaDataOf(CONSISTENCY_KEY);
     if (actualConsistencyKey.equals(entry.getConsistencyKey())) {
       if (fullyConsistent) {
@@ -142,7 +278,7 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 {
    * @return return true if known to be consistent, false if probably.
    * @throws Exception
    */
-  private boolean markEntryAsPotentiallyConsistent(ConsistencyEntry entry) throws Exception {
+  private boolean markEntryAsPotentiallyConsistent(ConsistencyEntry entry) {
     String consistencyPath = getConsistencyPath(entry.getBucket(), entry.getKey());
     LOGGER.debug("entry is potentially consistent {}", entry);
     while (true) {
@@ -156,11 +292,14 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 {
         }
         LOGGER.debug("setConsistencyEntry failed, refetch {}", entry);
         entry = getConsistencyEntry(consistencyPath);
+        if (entry == null) {
+          return true;
+        }
       }
     }
   }
 
-  private boolean updateEntryConsistencyInfo(ConsistencyEntry entry) throws Exception {
+  private boolean updateEntryConsistencyInfo(ConsistencyEntry entry) {
     if (entry.getConsistencyCount() >= _maxConsistencyCount) {
       return true;
     }
@@ -173,19 +312,19 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 {
     return false;
   }
 
-  private boolean setConsistencyEntry(ConsistencyEntry entry) throws Exception {
+  private boolean setConsistencyEntry(ConsistencyEntry entry) {
     LOGGER.debug("setConsistencyEntry entry {}", entry);
     String path = getConsistencyPath(entry.getBucket(), entry.getKey());
-    Stat stat = entry.getStat();
-    byte[] data = OBJECT_MAPPER.writeValueAsBytes(entry);
-    if (stat == null) {
+    Integer version = entry.getVersion();
+    byte[] data = JsonUtils.toBytes(entry);
+    if (version == null) {
       // probably new
       if (CuratorUtils.createPath(_curatorFramework, path, data)) {
         entry.setStat(CuratorUtils.getStatPath(_curatorFramework, path));
         return true;
       }
     } else {
-      if (CuratorUtils.setData(_curatorFramework, path, data, stat)) {
+      if (CuratorUtils.setData(_curatorFramework, path, data, version)) {
         entry.setStat(CuratorUtils.getStatPath(_curatorFramework, path));
         return true;
       }
@@ -193,119 +332,21 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 {
     return false;
   }
 
-  private ConsistencyEntry getConsistencyEntry(String path) throws Exception {
+  private ConsistencyEntry getConsistencyEntry(String path) {
     DataResult dataResult = CuratorUtils.getDataIfExists(_curatorFramework, path);
     if (dataResult != null) {
-      ConsistencyEntry entry = OBJECT_MAPPER.readValue(dataResult.getData(), ConsistencyEntry.class);
+      ConsistencyEntry entry = JsonUtils.toObject(dataResult.getData(), ConsistencyEntry.class);
       entry.setStat(dataResult.getStat());
       return entry;
     }
     return null;
   }
 
-  public PutObjectResult putConsistentObject(PutObjectRequest putObjectRequest) throws Exception {
-    ObjectMetadata metadata = putObjectRequest.getMetadata();
-    if (metadata == null) {
-      metadata = new ObjectMetadata();
-    }
-    String consistencyKey = UUID.randomUUID()
-                                .toString();
-    metadata.addUserMetadata(CONSISTENCY_KEY, consistencyKey);
-    putObjectRequest.setMetadata(metadata);
-    String path = getConsistencyPath(putObjectRequest.getBucketName(), putObjectRequest.getKey());
-
-    ConsistencyEntry entry = new ConsistencyEntry();
-    entry.setBucket(putObjectRequest.getBucketName());
-    entry.setKey(putObjectRequest.getKey());
-    entry.setConsistencyKey(consistencyKey);
-    byte[] data = OBJECT_MAPPER.writeValueAsBytes(entry);
-    CuratorUtils.createOrSetDataForPath(_curatorFramework, path, data);
-    return putObject(putObjectRequest);
-  }
-
-  public void deleteConsistentObject(DeleteObjectRequest deleteObjectRequest) throws Exception {
-    String bucketName = deleteObjectRequest.getBucketName();
-    String key = deleteObjectRequest.getKey();
-    deleteEntry(bucketName, key);
-    deleteObject(deleteObjectRequest);
-  }
-
-  public DeleteObjectsResult deleteConsistentObjects(DeleteObjectsRequest deleteObjectsRequest) throws Exception {
-    String bucketName = deleteObjectsRequest.getBucketName();
-    for (KeyVersion key : deleteObjectsRequest.getKeys()) {
-      deleteEntry(bucketName, key.getKey());
-    }
-    return deleteObjects(deleteObjectsRequest);
-  }
-
-  public void deleteConsistentObject(String bucketName, String key) throws Exception {
-    deleteConsistentObject(new DeleteObjectRequest(bucketName, key));
-  }
-
-  public PutObjectResult putConsistentObject(String bucketName, String key, File file) throws Exception {
-    return putConsistentObject(new PutObjectRequest(bucketName, key, file));
-  }
-
-  public PutObjectResult putConsistentObject(String bucketName, String key, InputStream input, ObjectMetadata metadata)
-      throws Exception {
-    return putConsistentObject(new PutObjectRequest(bucketName, key, input, metadata));
-  }
-
-  public PutObjectResult putConsistentObject(String bucketName, String key, String content) throws Exception {
-    byte[] bs = content.getBytes(StringUtils.UTF8);
-    try (InputStream input = new ByteArrayInputStream(bs)) {
-      ObjectMetadata metadata = new ObjectMetadata();
-      metadata.setContentLength(bs.length);
-      return putConsistentObject(new PutObjectRequest(bucketName, key, input, metadata));
+  private static void sleep(long l) {
+    try {
+      Thread.sleep(l);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
     }
   }
-
-  public String getConsistentObjectAsString(String bucketName, String key) throws Exception {
-    S3Object s3Object = getConsistentObject(bucketName, key);
-    try (S3ObjectInputStream input = s3Object.getObjectContent()) {
-      return IOUtils.toString(input);
-    }
-  }
-
-  public ObjectMetadata getConsistentObject(GetObjectRequest req, File dest) throws Exception {
-    S3Object s3Object = getConsistentObject(req);
-    try (S3ObjectInputStream input = s3Object.getObjectContent()) {
-      try (OutputStream output = new BufferedOutputStream(new FileOutputStream(dest))) {
-        IOUtils.copy(input, output);
-      }
-    }
-    return s3Object.getObjectMetadata();
-  }
-
-  public S3Object getConsistentObject(String bucketName, String key) throws Exception {
-    return getConsistentObject(new GetObjectRequest(bucketName, key));
-  }
-
-  private String getConsistencyPath(String bucketName, String key) {
-    int hashCode = bucketName.hashCode();
-    hashCode += key.hashCode();
-    return getPrefix() + "/" + bucketName + "__" + key.replace("/", "__") + "__" + toString(hashCode);
-  }
-
-  private void deleteEntry(String bucketName, String key) throws Exception {
-    String consistencyPath = getConsistencyPath(bucketName, key);
-    if (_curatorFramework.checkExists()
-                         .forPath(consistencyPath) != null) {
-      _curatorFramework.delete()
-                       .forPath(consistencyPath);
-    }
-  }
-
-  private String getPrefix() {
-    if (_zkPrefix == null) {
-      return "/";
-    }
-    return _zkPrefix;
-  }
-
-  private String toString(int hashCode) {
-    long h = (long) hashCode & 0xFFFFFFFF;
-    return Long.toString(h, Character.MAX_RADIX);
-  }
-
 }

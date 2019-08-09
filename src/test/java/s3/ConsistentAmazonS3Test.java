@@ -2,6 +2,7 @@ package s3;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -23,6 +24,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 
@@ -69,8 +71,8 @@ public class ConsistentAmazonS3Test {
     for (int i = 0; i < 20; i++) {
       String value = UUID.randomUUID()
                          .toString();
-      s3.putConsistentObject(BUCKET, key, value);
-      assertEquals(value, s3.getConsistentObjectAsString(BUCKET, key));
+      s3.putObject(BUCKET, key, value);
+      assertEquals(value, s3.getObjectAsString(BUCKET, key));
     }
   }
 
@@ -81,7 +83,7 @@ public class ConsistentAmazonS3Test {
     for (int i = 0; i < 20; i++) {
       String value = UUID.randomUUID()
                          .toString();
-      s3.putConsistentObject(BUCKET, key, value);
+      s3.putObject(BUCKET, key, value);
     }
     s3.checkOutstandingConsistencyEntries(true);
     List<ConsistencyEntry> entries = s3.getOutstandingConsistencyEntries();
@@ -92,9 +94,9 @@ public class ConsistentAmazonS3Test {
   public void testConsistentAmazonS3Deletes() throws Exception {
     ConsistentAmazonS3 s3 = ConsistentAmazonS3.create(CLIENT, CURATOR, "/s3/consistent/test");
     String key = "contest/test";
-    s3.putConsistentObject(BUCKET, key, UUID.randomUUID()
-                                            .toString());
-    s3.deleteConsistentObject(BUCKET, key);
+    s3.putObject(BUCKET, key, UUID.randomUUID()
+                                  .toString());
+    s3.deleteObject(BUCKET, key);
     List<ConsistencyEntry> entries = s3.getOutstandingConsistencyEntries();
     assertTrue(entries.isEmpty());
   }
@@ -103,7 +105,7 @@ public class ConsistentAmazonS3Test {
   public void testConsistentAmazonS3Threaded() throws Exception {
     ConsistentAmazonS3 s3 = ConsistentAmazonS3.create(CLIENT, CURATOR, "/s3/consistent/test");
     String key = "contest/test";
-    s3.putConsistentObject(BUCKET, key, Integer.toString(0));
+    s3.putObject(BUCKET, key, Integer.toString(0));
     int max = 100;
     Callable<Integer> even = createCallable(s3, key, "even", 0, max);
     Callable<Integer> odd = createCallable(s3, key, "odd", 1, max);
@@ -118,13 +120,33 @@ public class ConsistentAmazonS3Test {
     }
   }
 
+  @Test
+  public void testConsistentAmazonS3Deleted() throws Exception {
+    ConsistentAmazonS3 s3 = ConsistentAmazonS3.create(CLIENT, CURATOR, "/s3/consistent/test");
+    String key = "contest/test";
+    for (int i = 0; i < 20; i++) {
+      String id = UUID.randomUUID()
+                      .toString();
+      s3.putObject(BUCKET, key, id);
+      assertEquals(id, s3.getObjectAsString(BUCKET, key));
+      s3.deleteObject(BUCKET, key);
+      try {
+        s3.getObjectAsString(BUCKET, key);
+      } catch (AmazonServiceException e) {
+        if (e.getStatusCode() != 404) {
+          fail();
+        }
+      }
+    }
+  }
+
   private Callable<Integer> createCallable(ConsistentAmazonS3 s3, String key, String type, int checkValue, int max) {
     return new Callable<Integer>() {
       @Override
       public Integer call() throws Exception {
         try {
           while (true) {
-            String value = s3.getConsistentObjectAsString(BUCKET, key);
+            String value = s3.getObjectAsString(BUCKET, key);
             int i = Integer.parseInt(value);
             if (i >= max) {
               return i;
@@ -132,7 +154,7 @@ public class ConsistentAmazonS3Test {
             if (i % 2 == checkValue) {
               String newValue = Integer.toString(i + 1);
               LOGGER.info("{} {} => {}", type, value, newValue);
-              s3.putConsistentObject(BUCKET, key, newValue);
+              s3.putObject(BUCKET, key, newValue);
             }
           }
         } catch (Exception e) {

@@ -13,7 +13,7 @@ public class CuratorUtils {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CuratorUtils.class);
 
-  public static List<String> getChildrenIfExists(CuratorFramework curatorFramework, String path) throws Exception {
+  public static List<String> getChildrenIfExists(CuratorFramework curatorFramework, String path) {
     while (true) {
       try {
         Stat stat = curatorFramework.checkExists()
@@ -28,13 +28,13 @@ public class CuratorUtils {
           LOGGER.warn(e.getMessage());
           waitAfterError();
         } else {
-          throw e;
+          throw new RuntimeException(e);
         }
       }
     }
   }
 
-  public static DataResult getDataIfExists(CuratorFramework curatorFramework, String path) throws Exception {
+  public static DataResult getDataIfExists(CuratorFramework curatorFramework, String path) {
     while (true) {
       try {
         Stat stat = curatorFramework.checkExists()
@@ -51,13 +51,13 @@ public class CuratorUtils {
           LOGGER.warn(e.getMessage());
           waitAfterError();
         } else {
-          throw e;
+          throw new RuntimeException(e);
         }
       }
     }
   }
 
-  public static void deletePathIfExists(CuratorFramework curatorFramework, String path) throws Exception {
+  public static void deletePathIfExists(CuratorFramework curatorFramework, String path) {
     while (true) {
       try {
         Stat stat = curatorFramework.checkExists()
@@ -73,14 +73,13 @@ public class CuratorUtils {
           LOGGER.warn(e.getMessage());
           waitAfterError();
         } else {
-          throw e;
+          throw new RuntimeException(e);
         }
       }
     }
   }
 
-  public static void createOrSetDataForPath(CuratorFramework curatorFramework, String path, byte[] data)
-      throws Exception {
+  public static void createOrSetDataForPath(CuratorFramework curatorFramework, String path, byte[] data) {
     while (true) {
       try {
         Stat stat = curatorFramework.checkExists()
@@ -101,17 +100,21 @@ public class CuratorUtils {
           LOGGER.warn(e.getMessage());
           waitAfterError();
         } else {
-          throw e;
+          throw new RuntimeException(e);
         }
       }
     }
   }
 
-  private static void waitAfterError() throws InterruptedException {
-    Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+  private static void waitAfterError() {
+    try {
+      Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
   }
 
-  public static boolean createPath(CuratorFramework curatorFramework, String path, byte[] data) throws Exception {
+  public static boolean createPath(CuratorFramework curatorFramework, String path, byte[] data) {
     while (true) {
       try {
         Stat stat = curatorFramework.checkExists()
@@ -130,13 +133,13 @@ public class CuratorUtils {
           LOGGER.warn(e.getMessage());
           waitAfterError();
         } else {
-          throw e;
+          throw new RuntimeException(e);
         }
       }
     }
   }
 
-  public static Stat getStatPath(CuratorFramework curatorFramework, String path) throws Exception {
+  public static Stat getStatPath(CuratorFramework curatorFramework, String path) {
     while (true) {
       try {
         return curatorFramework.checkExists()
@@ -147,25 +150,24 @@ public class CuratorUtils {
           LOGGER.warn(e.getMessage());
           waitAfterError();
         } else {
-          throw e;
+          throw new RuntimeException(e);
         }
       }
     }
   }
 
-  public static boolean setData(CuratorFramework curatorFramework, String path, byte[] data, Stat statProvided)
-      throws Exception {
+  public static boolean setData(CuratorFramework curatorFramework, String path, byte[] data, int versionProvided) {
     while (true) {
       try {
         Stat stat = curatorFramework.checkExists()
                                     .creatingParentsIfNeeded()
                                     .forPath(path);
         if (stat != null) {
-          if (statProvided.getVersion() != stat.getVersion()) {
+          if (versionProvided != stat.getVersion()) {
             return false;
           }
           curatorFramework.setData()
-                          .withVersion(statProvided.getVersion())
+                          .withVersion(versionProvided)
                           .forPath(path, data);
           return true;
         } else {
@@ -176,7 +178,7 @@ public class CuratorUtils {
           LOGGER.warn(e.getMessage());
           waitAfterError();
         } else {
-          throw e;
+          throw new RuntimeException(e);
         }
       }
     }

@@ -15,8 +15,17 @@ public class ConsistencyEntry {
   String bucket;
   String key;
   String consistencyKey;
+  boolean deleted;
   int consistencyCount;
   long firstConsistentView;
   @JsonIgnore
-  Stat stat;
+  Integer version;
+
+  public void setStat(Stat stat) {
+    if (stat != null) {
+      setVersion(stat.getVersion());
+    } else {
+      setVersion(null);
+    }
+  }
 }
