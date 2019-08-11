@@ -1,7 +1,8 @@
-package s3;
+package consistent.s3;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -9,8 +10,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
@@ -34,7 +36,9 @@ import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.util.IOUtils;
 import com.amazonaws.util.StringUtils;
 
-public class ConsistentAmazonS3 extends AbstractAmazonS3 {
+public class ConsistentAmazonS3 extends AbstractAmazonS3 implements Closeable {
+
+  private static final String CONSISTENT_S3_CHECK = "consistent-s3-check";
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ConsistentAmazonS3.class);
 
@@ -42,23 +46,59 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 {
   private static final String _404_NOT_FOUND = "404 Not Found";
   private final CuratorFramework _curatorFramework;
   private final String _zkPrefix;
-  private final long _retryDelay = TimeUnit.SECONDS.toMillis(1);
-  private final int _maxConsistencyCount = 10;
+  private final long _retryDelayMs;
+  private final long _s3ConsistencyMaxWaitTimeMs;
+  private final int _maxConsistencyCount;
   private final AmazonS3 _client;
+  private final Timer _timer;
+  private final long _s3ConsistencyCheckPeriodTimeMs;
 
   public static ConsistentAmazonS3 create(AmazonS3 client, CuratorFramework curatorFramework) throws Exception {
-    return new ConsistentAmazonS3(client, curatorFramework, null);
+    return new ConsistentAmazonS3(client, curatorFramework, ConsistentAmazonS3Config.DEFAULT);
   }
 
-  public static ConsistentAmazonS3 create(AmazonS3 client, CuratorFramework curatorFramework, String zkPrefix)
+  public static ConsistentAmazonS3 create(AmazonS3 client, CuratorFramework curatorFramework,
+      ConsistentAmazonS3Config config) throws Exception {
+    return new ConsistentAmazonS3(client, curatorFramework, config);
+  }
+
+  private ConsistentAmazonS3(AmazonS3 client, CuratorFramework curatorFramework, ConsistentAmazonS3Config config)
       throws Exception {
-    return new ConsistentAmazonS3(client, curatorFramework, zkPrefix);
-  }
-
-  private ConsistentAmazonS3(AmazonS3 client, CuratorFramework curatorFramework, String zkPrefix) throws Exception {
     _client = client;
     _curatorFramework = curatorFramework;
-    _zkPrefix = zkPrefix;
+    _zkPrefix = config.getZkPrefix();
+    _retryDelayMs = config.getRetryDelayMs();
+    _s3ConsistencyMaxWaitTimeMs = config.getS3ConsistencyMaxWaitTimeMs();
+    _s3ConsistencyCheckPeriodTimeMs = config.getS3ConsistencyCheckPeriodTimeMs();
+    _maxConsistencyCount = config.getMaxConsistencyCount();
+    if (config.isAutoCheckEntriesEnabled()) {
+      _timer = new Timer(CONSISTENT_S3_CHECK, true);
+      _timer.schedule(getCheckTask(), _s3ConsistencyCheckPeriodTimeMs, _s3ConsistencyCheckPeriodTimeMs);
+    } else {
+      _timer = null;
+    }
+  }
+
+  private TimerTask getCheckTask() {
+    return new TimerTask() {
+      @Override
+      public void run() {
+        LOGGER.info("Checking for consistent entries");
+        try {
+          checkOutstandingConsistencyEntries(false);
+        } catch (Exception e) {
+          LOGGER.error("Unknown error while trying to check for expired entries", e);
+        }
+      }
+    };
+  }
+
+  @Override
+  public void close() throws IOException {
+    if (_timer != null) {
+      _timer.cancel();
+      _timer.purge();
+    }
   }
 
   public void checkOutstandingConsistencyEntries(boolean waitForEntriesToBecomeConsistent) {
@@ -73,13 +113,17 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 {
         ObjectMetadata objectMetadata = _client.getObjectMetadata(entry.getBucket(), entry.getKey());
         if (waitForEntriesToBecomeConsistent) {
           while (!isValid(entry, objectMetadata, true)) {
-            sleep(_retryDelay);
+            sleep(_retryDelayMs);
           }
         } else {
           isValid(entry, objectMetadata);
         }
       }
     }
+  }
+
+  private boolean isExpired(ConsistencyEntry entry) {
+    return entry.getCreatedTs() + _s3ConsistencyMaxWaitTimeMs < System.currentTimeMillis();
   }
 
   public List<ConsistencyEntry> getOutstandingConsistencyEntries() {
@@ -119,7 +163,7 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 {
           throw e;
         }
       }
-      sleep(_retryDelay);
+      sleep(_retryDelayMs);
     }
   }
 
@@ -149,6 +193,7 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 {
     entry.setBucket(putObjectRequest.getBucketName());
     entry.setKey(putObjectRequest.getKey());
     entry.setConsistencyKey(consistencyKey);
+    entry.setCreatedTs(System.currentTimeMillis());
 
     byte[] data = JsonUtils.toBytes(entry);
     CuratorUtils.createOrSetDataForPath(_curatorFramework, path, data);
@@ -231,15 +276,14 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 {
     return getObject(new GetObjectRequest(bucketName, key));
   }
 
+  private String getConsistencyPath(ConsistencyEntry entry) {
+    return getConsistencyPath(entry.getBucket(), entry.getKey());
+  }
+
   private String getConsistencyPath(String bucketName, String key) {
     int hashCode = bucketName.hashCode();
     hashCode += key.hashCode();
     return getPrefix() + "/" + bucketName + "__" + key.replace("/", "__") + "__" + toString(hashCode);
-  }
-
-  private void deleteEntry(String bucketName, String key) {
-    String consistencyPath = getConsistencyPath(bucketName, key);
-    CuratorUtils.deletePathIfExists(_curatorFramework, consistencyPath);
   }
 
   private String getPrefix() {
@@ -259,6 +303,11 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 {
   }
 
   private boolean isValid(ConsistencyEntry entry, ObjectMetadata objectMetadata, boolean fullyConsistent) {
+    if (isExpired(entry)) {
+      LOGGER.info("Entry time expired {}", entry);
+      deleteEntry(entry);
+      return true;
+    }
     String actualConsistencyKey = objectMetadata.getUserMetaDataOf(CONSISTENCY_KEY);
     if (actualConsistencyKey.equals(entry.getConsistencyKey())) {
       if (fullyConsistent) {
@@ -272,6 +321,16 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 {
     return false;
   }
 
+  private void deleteEntry(ConsistencyEntry entry) {
+    String consistencyPath = getConsistencyPath(entry);
+    CuratorUtils.deletePathIfExists(_curatorFramework, consistencyPath);
+  }
+
+  private void deleteEntry(String bucket, String key) {
+    String consistencyPath = getConsistencyPath(bucket, key);
+    CuratorUtils.deletePathIfExists(_curatorFramework, consistencyPath);
+  }
+
   /**
    * 
    * @param entry
@@ -279,11 +338,11 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 {
    * @throws Exception
    */
   private boolean markEntryAsPotentiallyConsistent(ConsistencyEntry entry) {
-    String consistencyPath = getConsistencyPath(entry.getBucket(), entry.getKey());
+    String consistencyPath = getConsistencyPath(entry);
     LOGGER.debug("entry is potentially consistent {}", entry);
     while (true) {
       if (updateEntryConsistencyInfo(entry)) {
-        CuratorUtils.deletePathIfExists(_curatorFramework, consistencyPath);
+        deleteEntry(entry);
         return true;
       } else {
         if (setConsistencyEntry(entry)) {
@@ -303,9 +362,9 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 {
     if (entry.getConsistencyCount() >= _maxConsistencyCount) {
       return true;
     }
-    if (entry.getFirstConsistentView() == 0) {
+    if (entry.getFirstConsistentViewTs() == 0) {
       entry.setConsistencyCount(1);
-      entry.setFirstConsistentView(System.currentTimeMillis());
+      entry.setFirstConsistentViewTs(System.currentTimeMillis());
     } else {
       entry.setConsistencyCount(entry.getConsistencyCount() + 1);
     }
@@ -314,7 +373,7 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 {
 
   private boolean setConsistencyEntry(ConsistencyEntry entry) {
     LOGGER.debug("setConsistencyEntry entry {}", entry);
-    String path = getConsistencyPath(entry.getBucket(), entry.getKey());
+    String path = getConsistencyPath(entry);
     Integer version = entry.getVersion();
     byte[] data = JsonUtils.toBytes(entry);
     if (version == null) {
@@ -349,4 +408,5 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 {
       throw new RuntimeException(e);
     }
   }
+
 }

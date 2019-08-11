@@ -14,7 +14,7 @@ mvn install:install-file \
  -DgroupId=consistent-s3 \
  -DartifactId=consistent-s3 \
  -Dversion=${VERSION} \
- -Dfile=${DIR}/target/consistent-s3-$VERSION.jar \
+ -Dfile=${DIR}/target/consistent-s3-${VERSION}.jar \
  -Dpackaging=jar \
  -DgeneratePom=true \
  -DlocalRepositoryPath=. \

@@ -1,4 +1,4 @@
-package s3;
+package consistent.s3;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -27,6 +27,10 @@ import org.slf4j.LoggerFactory;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+
+import consistent.s3.ConsistencyEntry;
+import consistent.s3.ConsistentAmazonS3;
+import consistent.s3.ConsistentAmazonS3Config;
 
 public class ConsistentAmazonS3Test {
 
@@ -64,10 +68,14 @@ public class ConsistentAmazonS3Test {
     CURATOR.start();
   }
 
+  private final ConsistentAmazonS3Config _config = ConsistentAmazonS3Config.DEFAULT.toBuilder()
+                                                                                   .zkPrefix("/s3/consistent/test")
+                                                                                   .build();
+
   @Test
   public void testConsistentAmazonS3Basic() throws Exception {
-    ConsistentAmazonS3 s3 = ConsistentAmazonS3.create(CLIENT, CURATOR, "/s3/consistent/test");
-    String key = "contest/test";
+    ConsistentAmazonS3 s3 = ConsistentAmazonS3.create(CLIENT, CURATOR, _config);
+    String key = "consistent/test";
     for (int i = 0; i < 20; i++) {
       String value = UUID.randomUUID()
                          .toString();
@@ -78,8 +86,8 @@ public class ConsistentAmazonS3Test {
 
   @Test
   public void testConsistentAmazonS3AllPuts() throws Exception {
-    ConsistentAmazonS3 s3 = ConsistentAmazonS3.create(CLIENT, CURATOR, "/s3/consistent/test");
-    String key = "contest/test";
+    ConsistentAmazonS3 s3 = ConsistentAmazonS3.create(CLIENT, CURATOR, _config);
+    String key = "consistent/test";
     for (int i = 0; i < 20; i++) {
       String value = UUID.randomUUID()
                          .toString();
@@ -91,9 +99,28 @@ public class ConsistentAmazonS3Test {
   }
 
   @Test
+  public void testConsistentAmazonS3AllPutsGCTest() throws Exception {
+    ConsistentAmazonS3Config config = _config.toBuilder()
+                                             .s3ConsistencyMaxWaitTimeMs(TimeUnit.SECONDS.toMillis(10))
+                                             .s3ConsistencyCheckPeriodTimeMs(TimeUnit.SECONDS.toMillis(3))
+                                             .build();
+    ConsistentAmazonS3 s3 = ConsistentAmazonS3.create(CLIENT, CURATOR, config);
+    String key = "consistent/test";
+    for (int i = 0; i < 20; i++) {
+      String value = UUID.randomUUID()
+                         .toString();
+      s3.putObject(BUCKET, key, value);
+    }
+    Thread.sleep(config.getS3ConsistencyMaxWaitTimeMs() + TimeUnit.SECONDS.toMillis(5));
+    List<ConsistencyEntry> entries = s3.getOutstandingConsistencyEntries();
+    assertTrue(entries.isEmpty());
+
+  }
+
+  @Test
   public void testConsistentAmazonS3Deletes() throws Exception {
-    ConsistentAmazonS3 s3 = ConsistentAmazonS3.create(CLIENT, CURATOR, "/s3/consistent/test");
-    String key = "contest/test";
+    ConsistentAmazonS3 s3 = ConsistentAmazonS3.create(CLIENT, CURATOR, _config);
+    String key = "consistent/test";
     s3.putObject(BUCKET, key, UUID.randomUUID()
                                   .toString());
     s3.deleteObject(BUCKET, key);
@@ -103,8 +130,8 @@ public class ConsistentAmazonS3Test {
 
   @Test
   public void testConsistentAmazonS3Threaded() throws Exception {
-    ConsistentAmazonS3 s3 = ConsistentAmazonS3.create(CLIENT, CURATOR, "/s3/consistent/test");
-    String key = "contest/test";
+    ConsistentAmazonS3 s3 = ConsistentAmazonS3.create(CLIENT, CURATOR, _config);
+    String key = "consistent/test";
     s3.putObject(BUCKET, key, Integer.toString(0));
     int max = 100;
     Callable<Integer> even = createCallable(s3, key, "even", 0, max);
@@ -122,8 +149,8 @@ public class ConsistentAmazonS3Test {
 
   @Test
   public void testConsistentAmazonS3Deleted() throws Exception {
-    ConsistentAmazonS3 s3 = ConsistentAmazonS3.create(CLIENT, CURATOR, "/s3/consistent/test");
-    String key = "contest/test";
+    ConsistentAmazonS3 s3 = ConsistentAmazonS3.create(CLIENT, CURATOR, _config);
+    String key = "consistent/test";
     for (int i = 0; i < 20; i++) {
       String id = UUID.randomUUID()
                       .toString();

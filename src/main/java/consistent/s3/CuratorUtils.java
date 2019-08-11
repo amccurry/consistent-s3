@@ -1,4 +1,4 @@
-package s3;
+package consistent.s3;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;

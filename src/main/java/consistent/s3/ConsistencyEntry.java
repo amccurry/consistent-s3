@@ -1,4 +1,4 @@
-package s3;
+package consistent.s3;
 
 import org.apache.zookeeper.data.Stat;
 
@@ -12,14 +12,15 @@ import lombok.ToString;
 @EqualsAndHashCode
 @ToString
 public class ConsistencyEntry {
-  String bucket;
-  String key;
-  String consistencyKey;
-  boolean deleted;
-  int consistencyCount;
-  long firstConsistentView;
+  private String bucket;
+  private String key;
+  private String consistencyKey;
+  private boolean deleted;
+  private int consistencyCount;
+  private long createdTs;
+  private long firstConsistentViewTs;
   @JsonIgnore
-  Integer version;
+  private Integer version;
 
   public void setStat(Stat stat) {
     if (stat != null) {

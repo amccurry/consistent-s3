@@ -1,4 +1,4 @@
-package s3;
+package consistent.s3;
 
 import org.apache.zookeeper.data.Stat;
 
