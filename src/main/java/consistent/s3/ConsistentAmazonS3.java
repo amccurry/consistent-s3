@@ -92,6 +92,14 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 implements Closeable {
     };
   }
 
+  public CuratorFramework getCuratorFramework() {
+    return _curatorFramework;
+  }
+
+  public AmazonS3 getClient() {
+    return _client;
+  }
+
   @Override
   public void close() throws IOException {
     if (_timer != null) {
