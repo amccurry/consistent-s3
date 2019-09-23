@@ -43,7 +43,6 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 implements Closeable {
   private static final Logger LOGGER = LoggerFactory.getLogger(ConsistentAmazonS3.class);
 
   private static final String CONSISTENCY_KEY = "consistencyKey";
-  private static final String _404_NOT_FOUND = "404 Not Found";
   private final CuratorFramework _curatorFramework;
   private final String _zkPrefix;
   private final long _retryDelayMs;
@@ -157,9 +156,8 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 implements Closeable {
           return object;
         }
       } catch (AmazonS3Exception e) {
-        LOGGER.error(e.getMessage(), e);
-        if (!e.getErrorCode()
-              .equals(_404_NOT_FOUND)) {
+        if (e.getStatusCode() != 404) {
+          LOGGER.error(e.getMessage(), e);
           throw e;
         }
       }
