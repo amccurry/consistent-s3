@@ -23,6 +23,8 @@ import com.amazonaws.AmazonServiceException.ErrorType;
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
+import com.amazonaws.services.s3.model.CopyObjectRequest;
+import com.amazonaws.services.s3.model.CopyObjectResult;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest.KeyVersion;
@@ -38,10 +40,9 @@ import com.amazonaws.util.StringUtils;
 
 public class ConsistentAmazonS3 extends AbstractAmazonS3 implements Closeable {
 
-  private static final String CONSISTENT_S3_CHECK = "consistent-s3-check";
-
   private static final Logger LOGGER = LoggerFactory.getLogger(ConsistentAmazonS3.class);
 
+  private static final String CONSISTENT_S3_CHECK = "consistent-s3-check";
   private static final String CONSISTENCY_KEY = "consistencyKey";
   private final CuratorFramework _curatorFramework;
   private final String _zkPrefix;
@@ -71,6 +72,7 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 implements Closeable {
     _s3ConsistencyCheckPeriodTimeMs = config.getS3ConsistencyCheckPeriodTimeMs();
     _maxConsistencyCount = config.getMaxConsistencyCount();
     if (config.isAutoCheckEntriesEnabled()) {
+      LOGGER.debug("Starting auto check timer");
       _timer = new Timer(CONSISTENT_S3_CHECK, true);
       _timer.schedule(getCheckTask(), _s3ConsistencyCheckPeriodTimeMs, _s3ConsistencyCheckPeriodTimeMs);
     } else {
@@ -82,7 +84,7 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 implements Closeable {
     return new TimerTask() {
       @Override
       public void run() {
-        LOGGER.info("Checking for consistent entries");
+        LOGGER.debug("Checking for consistent entries");
         try {
           checkOutstandingConsistencyEntries(false);
         } catch (Exception e) {
@@ -117,7 +119,7 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 implements Closeable {
       String path = getPrefix() + "/" + s;
       ConsistencyEntry entry = getConsistencyEntry(path);
       if (entry != null) {
-        ObjectMetadata objectMetadata = _client.getObjectMetadata(entry.getBucket(), entry.getKey());
+        ObjectMetadata objectMetadata = getObjectMetadata(entry);
         if (waitForEntriesToBecomeConsistent) {
           while (!isValid(entry, objectMetadata, true)) {
             sleep(_retryDelayMs);
@@ -126,6 +128,18 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 implements Closeable {
           isValid(entry, objectMetadata);
         }
       }
+    }
+  }
+
+  private ObjectMetadata getObjectMetadata(ConsistencyEntry entry) {
+    try {
+      return _client.getObjectMetadata(entry.getBucket(), entry.getKey());
+    } catch (AmazonS3Exception e) {
+      if (e.getStatusCode() != 404) {
+        LOGGER.error(e.getMessage(), e);
+        throw e;
+      }
+      return null;
     }
   }
 
@@ -186,24 +200,44 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 implements Closeable {
   public PutObjectResult putObject(PutObjectRequest putObjectRequest)
       throws SdkClientException, AmazonServiceException {
     ObjectMetadata metadata = putObjectRequest.getMetadata();
+    putObjectRequest.setMetadata(addEntry(metadata, putObjectRequest.getBucketName(), putObjectRequest.getKey()));
+    return _client.putObject(putObjectRequest);
+  }
+
+  private ObjectMetadata addEntry(ObjectMetadata metadata, String bucket, String key) {
     if (metadata == null) {
       metadata = new ObjectMetadata();
     }
     String consistencyKey = UUID.randomUUID()
                                 .toString();
     metadata.addUserMetadata(CONSISTENCY_KEY, consistencyKey);
-    putObjectRequest.setMetadata(metadata);
-    String path = getConsistencyPath(putObjectRequest.getBucketName(), putObjectRequest.getKey());
+
+    String path = getConsistencyPath(bucket, key);
 
     ConsistencyEntry entry = new ConsistencyEntry();
-    entry.setBucket(putObjectRequest.getBucketName());
-    entry.setKey(putObjectRequest.getKey());
+    entry.setBucket(bucket);
+    entry.setKey(key);
     entry.setConsistencyKey(consistencyKey);
     entry.setCreatedTs(System.currentTimeMillis());
 
     byte[] data = JsonUtils.toBytes(entry);
     CuratorUtils.createOrSetDataForPath(_curatorFramework, path, data);
-    return _client.putObject(putObjectRequest);
+    return metadata;
+  }
+
+  @Override
+  public CopyObjectResult copyObject(String sourceBucketName, String sourceKey, String destinationBucketName,
+      String destinationKey) throws SdkClientException, AmazonServiceException {
+    return copyObject(new CopyObjectRequest(sourceBucketName, sourceKey, destinationBucketName, destinationKey));
+  }
+
+  @Override
+  public CopyObjectResult copyObject(CopyObjectRequest copyObjectRequest)
+      throws SdkClientException, AmazonServiceException {
+    ObjectMetadata newObjectMetadata = copyObjectRequest.getNewObjectMetadata();
+    copyObjectRequest.setNewObjectMetadata(addEntry(newObjectMetadata, copyObjectRequest.getDestinationBucketName(),
+        copyObjectRequest.getDestinationKey()));
+    return _client.copyObject(copyObjectRequest);
   }
 
   @Override
@@ -310,9 +344,18 @@ public class ConsistentAmazonS3 extends AbstractAmazonS3 implements Closeable {
 
   private boolean isValid(ConsistencyEntry entry, ObjectMetadata objectMetadata, boolean fullyConsistent) {
     if (isExpired(entry)) {
-      LOGGER.info("Entry time expired {}", entry);
+      LOGGER.debug("Entry time expired {}", entry);
       deleteEntry(entry);
       return true;
+    }
+    if (objectMetadata == null && entry.isDeleted()) {
+      LOGGER.debug("Object removed {}", entry);
+      deleteEntry(entry);
+      return true;
+    }
+    if (objectMetadata == null) {
+      LOGGER.debug("Object not present {}", entry);
+      return false;
     }
     String actualConsistencyKey = objectMetadata.getUserMetaDataOf(CONSISTENCY_KEY);
     if (actualConsistencyKey.equals(entry.getConsistencyKey())) {
